@@ -1,13 +1,13 @@
-const BASE_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:8787'
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? ''
+// Requests go through the same-origin /api/* Cloudflare Pages Function
+// (see functions/api/[[path]].ts), which attaches the Worker API key
+// server-side. No secret is ever shipped to the browser bundle.
+const BASE_URL = '/api'
 
 class APIClient {
   private baseUrl: string
-  private apiKey: string
 
-  constructor(baseUrl: string, apiKey: string) {
+  constructor(baseUrl: string) {
     this.baseUrl = baseUrl
-    this.apiKey = apiKey
   }
 
   private async fetch(path: string, options?: RequestInit) {
@@ -15,8 +15,6 @@ class APIClient {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-        'X-Tenant-Id': 'default',
         ...options?.headers,
       },
     })
@@ -30,12 +28,12 @@ class APIClient {
   }
 
   async getTraces(params: string) {
-    return this.fetch(`/v1/traces?${params}`)
+    return this.fetch(`/traces?${params}`)
   }
 
   async getMetrics(days: number) {
-    return this.fetch(`/v1/metrics?days=${days}`)
+    return this.fetch(`/metrics?days=${days}`)
   }
 }
 
-export const api = new APIClient(BASE_URL, API_KEY)
+export const api = new APIClient(BASE_URL)

@@ -16,7 +16,7 @@ export function wrapOllama(
 
     const startMs = Date.now()
     let body: any = {}
-    try { body = JSON.parse(init?.body as string ?? '{}') } catch {}
+    try { body = JSON.parse(init?.body as string ?? '{}') } catch { /* not JSON, treat as empty */ }
 
     const rawPrompt = (body.messages ?? [])
       .map((m: any) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
@@ -28,7 +28,7 @@ export function wrapOllama(
 
       const cloned = response.clone()
       let data: any = {}
-      try { data = await cloned.json() } catch {}
+      try { data = await cloned.json() } catch { /* non-JSON response body */ }
 
       const promptTokens     = data.prompt_eval_count as number | undefined
       const completionTokens = data.eval_count as number | undefined

@@ -54,3 +54,10 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys (key_hash);
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key_hash     TEXT NOT NULL,
+  window_start INTEGER NOT NULL, -- floor(unix_ms / 60000), i.e. 1-minute buckets
+  count        INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (key_hash, window_start)
+);

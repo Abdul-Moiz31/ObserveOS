@@ -1,5 +1,8 @@
 import type { Env } from '../types'
 import { authenticate } from '../middleware/auth'
+import { checkRateLimit, rateLimitResponse } from '../middleware/rateLimit'
+
+const QUERY_LIMIT_PER_MIN = 300
 
 function corsHeaders() {
   return {
@@ -9,13 +12,17 @@ function corsHeaders() {
 }
 
 export async function handleMetrics(request: Request, env: Env): Promise<Response> {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204 })
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders() })
 
   const auth = await authenticate(request, env)
   if (auth instanceof Response) return auth
 
+  const { allowed } = await checkRateLimit(env, auth.keyHash, QUERY_LIMIT_PER_MIN)
+  if (!allowed) return rateLimitResponse(corsHeaders())
+
   const url  = new URL(request.url)
-  const days = parseInt(url.searchParams.get('days') ?? '7')
+  const daysParam = parseInt(url.searchParams.get('days') ?? '7')
+  const days = Number.isFinite(daysParam) && daysParam > 0 ? Math.min(daysParam, 365) : 7
   const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
   try {

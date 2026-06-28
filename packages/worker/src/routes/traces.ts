@@ -1,5 +1,10 @@
 import type { Env, TraceRow } from '../types'
 import { authenticate } from '../middleware/auth'
+import { checkRateLimit, rateLimitResponse } from '../middleware/rateLimit'
+import { validateTrace } from '../utils/validate'
+
+const INGEST_LIMIT_PER_MIN = 120
+const QUERY_LIMIT_PER_MIN = 300
 
 function corsHeaders() {
   return {
@@ -23,7 +28,10 @@ export async function handleTraces(
 
   // POST /v1/traces — batch ingest
   if (request.method === 'POST') {
-    let body: any[]
+    const { allowed } = await checkRateLimit(env, auth.keyHash, INGEST_LIMIT_PER_MIN)
+    if (!allowed) return rateLimitResponse(corsHeaders())
+
+    let body: unknown[]
     try {
       const raw = await request.json()
       body = Array.isArray(raw) ? raw : [raw]
@@ -48,6 +56,21 @@ export async function handleTraces(
       })
     }
 
+    const validationErrors: { index: number; errors: string[] }[] = []
+    body.forEach((trace, index) => {
+      const result = validateTrace(trace)
+      if (!result.valid) validationErrors.push({ index, errors: result.errors })
+    })
+
+    if (validationErrors.length > 0) {
+      return new Response(JSON.stringify({ error: 'Validation failed', details: validationErrors }), {
+        status: 400,
+        headers: corsHeaders(),
+      })
+    }
+
+    const traces = body as Array<Record<string, any>>
+
     try {
       // D1 batch insert using prepared statement
       const stmt = env.DB.prepare(`
@@ -70,7 +93,7 @@ export async function handleTraces(
         )
       `)
 
-      const inserts = body.map((trace: any) =>
+      const inserts = traces.map((trace) =>
         stmt.bind(
           crypto.randomUUID(),
           trace.traceId   ?? crypto.randomUUID().replace(/-/g, ''),
@@ -101,7 +124,7 @@ export async function handleTraces(
 
       await env.DB.batch(inserts)
 
-      return new Response(JSON.stringify({ inserted: body.length }), {
+      return new Response(JSON.stringify({ inserted: traces.length }), {
         status: 201,
         headers: corsHeaders(),
       })
@@ -116,14 +139,24 @@ export async function handleTraces(
 
   // GET /v1/traces — query
   if (request.method === 'GET') {
+    const { allowed } = await checkRateLimit(env, auth.keyHash, QUERY_LIMIT_PER_MIN)
+    if (!allowed) return rateLimitResponse(corsHeaders())
+
     const url    = new URL(request.url)
-    const limit  = Math.min(parseInt(url.searchParams.get('limit')  ?? '50'), 200)
-    const offset = parseInt(url.searchParams.get('offset') ?? '0')
+    const limit  = Math.min(Math.max(parseInt(url.searchParams.get('limit')  ?? '50') || 50, 1), 200)
+    const offset = Math.max(parseInt(url.searchParams.get('offset') ?? '0') || 0, 0)
     const provider   = url.searchParams.get('provider')
     const model      = url.searchParams.get('model')
     const errorOnly  = url.searchParams.get('error') === 'true'
     const from       = url.searchParams.get('from')
     const to         = url.searchParams.get('to')
+
+    if ((from && isNaN(Date.parse(from))) || (to && isNaN(Date.parse(to)))) {
+      return new Response(JSON.stringify({ error: 'from/to must be valid ISO dates' }), {
+        status: 400,
+        headers: corsHeaders(),
+      })
+    }
 
     const conditions = ['tenant_id = ?']
     const values: any[] = [auth.tenantId]

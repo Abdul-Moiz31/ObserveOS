@@ -1,7 +1,27 @@
 export interface Env {
   DB: D1Database
-  API_KEY_SECRET: string
+  // Admin secret used only to mint/revoke per-tenant API keys via /v1/keys.
+  // Day-to-day ingestion/query auth uses hashed keys stored in the api_keys table.
+  ADMIN_SECRET: string
   ENVIRONMENT: string
+  RETENTION_DAYS?: string
+}
+
+export interface ApiKeyRow {
+  id: string
+  tenant_id: string
+  key_prefix: string
+  key_hash: string
+  name: string
+  created_at: string
+  last_used_at: string | null
+  revoked: number
+}
+
+export interface AuthContext {
+  tenantId: string
+  keyId: string
+  keyHash: string
 }
 
 export interface TraceRow {

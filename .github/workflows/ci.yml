@@ -38,10 +38,12 @@ jobs:
 
       - name: Lint code
         run: npm run lint --workspaces --if-present
-        continue-on-error: true  # don't fail on lint warnings
 
       - name: Run tests (SDK)
         run: npm test -w packages/sdk
+
+      - name: Run tests (Worker)
+        run: npm test -w packages/worker
 
       - name: Build all packages
         run: npm run build
@@ -138,6 +140,13 @@ jobs:
       - name: Build Worker
         run: npm run build -w packages/worker
 
+      - name: Set Worker admin secret
+        run: echo "${{ secrets.WORKER_ADMIN_SECRET }}" | npx wrangler secret put ADMIN_SECRET
+        working-directory: packages/worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy
         working-directory: packages/worker
@@ -183,10 +192,22 @@ jobs:
         run: npm run build -w packages/dashboard
         env:
           NEXT_PUBLIC_WORKER_URL: ${{ vars.NEXT_PUBLIC_WORKER_URL }}
-          NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy out --project-name observeos-dashboard
+        working-directory: packages/dashboard
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Configure Pages Function secrets
+        # Pages Functions read these server-side at request time; they are
+        # never bundled into the static client output. Re-run on every
+        # deploy since wrangler pages secret put is idempotent.
+        run: |
+          echo "${{ secrets.WORKER_API_KEY }}" | npx wrangler pages secret put WORKER_API_KEY --project-name observeos-dashboard
+          echo "${{ vars.NEXT_PUBLIC_WORKER_URL }}" | npx wrangler pages secret put WORKER_URL --project-name observeos-dashboard
+          echo "${{ vars.WORKER_TENANT_ID }}" | npx wrangler pages secret put WORKER_TENANT_ID --project-name observeos-dashboard
         working-directory: packages/dashboard
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -10,5 +10,11 @@ database_id = "192f7e63-92f8-42e2-b6a6-5c93e9be9c47"
 
 [vars]
 ENVIRONMENT = "production"
+RETENTION_DAYS = "90"
 
-# Set this as a secret: wrangler secret put API_KEY_SECRET
+[triggers]
+crons = ["0 3 * * *"] # daily retention cleanup, see scheduled() in src/index.ts
+
+# ADMIN_SECRET mints/revokes per-tenant API keys via POST/GET/DELETE /v1/keys.
+# It is NOT used for day-to-day trace ingestion/query auth (those use hashed
+# keys stored in the api_keys table). Set with: wrangler secret put ADMIN_SECRET
