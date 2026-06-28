@@ -1,0 +1,68 @@
+{
+  "name": "observeos",
+  "version": "0.1.0",
+  "description": "TypeScript-native LLM observability. Trace OpenAI, Anthropic, Ollama, Hugging Face with zero config.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build && npm test && npm run type-check"
+  },
+  "peerDependencies": {
+    "openai": ">=4.0.0",
+    "@anthropic-ai/sdk": ">=0.20.0",
+    "@huggingface/inference": ">=2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": { "optional": true },
+    "@anthropic-ai/sdk": { "optional": true },
+    "@huggingface/inference": { "optional": true }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "vitest": "^1.6.0",
+    "typescript": "^5.4.0",
+    "openai": "^4.0.0",
+    "@anthropic-ai/sdk": "^0.20.0",
+    "@huggingface/inference": "^2.8.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.0.0"
+  },
+  "keywords": [
+    "llm", "observability", "monitoring", "tracing", "opentelemetry",
+    "openai", "anthropic", "ollama", "huggingface",
+    "ai", "typescript", "sdk", "self-hosted"
+  ],
+  "author": "Abdul Mueez <abdulmoiz3140@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Abdul-Moiz31/ObserveOS.git"
+  },
+  "homepage": "https://github.com/Abdul-Moiz31/ObserveOS#readme",
+  "bugs": {
+    "url": "https://github.com/Abdul-Moiz31/ObserveOS/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

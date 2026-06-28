@@ -1,0 +1,40 @@
+{
+  "name": "observeos",
+  "version": "0.1.0",
+  "description": "TypeScript-native LLM observability. Self-hostable. OTEL-compatible.",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "license": "MIT",
+  "author": "Abdul Mueez <abdulmoiz3140@gmail.com>",
+  "homepage": "https://github.com/Abdul-Moiz31/ObserveOS",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Abdul-Moiz31/ObserveOS.git"
+  },
+
+  "workspaces": ["packages/*"],
+
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "clean": "turbo run clean && rm -rf node_modules .turbo dist",
+    "deploy": "turbo run deploy"
+  },
+
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "prettier": "^3.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.0.0"
+  },
+
+  "engines": {
+    "node": ">=20"
+  }
+}
