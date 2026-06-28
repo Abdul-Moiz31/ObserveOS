@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "observeos"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "192f7e63-92f8-42e2-b6a6-5c93e9be9c47"
 
 [vars]
 ENVIRONMENT = "production"
