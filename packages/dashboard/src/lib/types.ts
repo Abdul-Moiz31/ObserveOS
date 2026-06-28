@@ -1,0 +1,69 @@
+export interface Trace {
+  id: string
+  trace_id: string
+  span_id: string
+  parent_span_id: string | null
+  tenant_id: string
+  provider: string
+  model: string
+  prompt_hash: string
+  prompt_preview: string | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  total_tokens: number | null
+  response_preview: string | null
+  finish_reason: string | null
+  latency_ms: number
+  ttfb_ms: number | null
+  cost_usd: number | null
+  error: number
+  error_message: string | null
+  status_code: number | null
+  tags: string
+  metadata: string
+  environment: string
+  created_at: string
+}
+
+export interface ModelBreakdown {
+  model: string
+  provider: string
+  calls: number
+  cost_usd: number | null
+  avg_latency_ms: number | null
+}
+
+export interface ProviderBreakdown {
+  provider: string
+  calls: number
+  cost_usd: number | null
+}
+
+export interface ErrorRateDay {
+  day: string
+  total: number
+  errors: number
+}
+
+export interface MetricsSummary {
+  total_calls: number
+  total_tokens: number | null
+  total_cost_usd: number | null
+  avg_latency_ms: number | null
+  total_errors: number
+}
+
+export interface LatencyPercentiles {
+  p50: number | null
+  p95: number | null
+  p99: number | null
+}
+
+export interface Metrics {
+  summary: MetricsSummary
+  byModel: ModelBreakdown[]
+  byProvider: ProviderBreakdown[]
+  errorRateByDay: ErrorRateDay[]
+  latencyPercentiles: LatencyPercentiles
+  period: { days: number; from: string }
+}
