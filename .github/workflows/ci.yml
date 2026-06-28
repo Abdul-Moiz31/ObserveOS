@@ -197,6 +197,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 2
+    env:
+      HAS_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
 
     steps:
       - name: Check if all jobs succeeded
@@ -211,7 +213,7 @@ jobs:
           fi
 
       - name: Create Slack notification (optional)
-        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        if: failure() && env.HAS_SLACK_WEBHOOK == 'true'
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
