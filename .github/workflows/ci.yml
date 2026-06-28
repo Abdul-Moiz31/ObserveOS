@@ -1,0 +1,219 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: npm
+
+jobs:
+  # ─── JOB 1: Test & Build ────────────────────────────────────────────
+
+  test-and-build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for better caching
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check all packages
+        run: npm run type-check --workspaces --if-present
+
+      - name: Lint code
+        run: npm run lint --workspaces --if-present
+        continue-on-error: true  # don't fail on lint warnings
+
+      - name: Run tests (SDK)
+        run: npm test -w packages/sdk
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            packages/sdk/dist/
+            packages/dashboard/out/
+            packages/worker/dist/
+          retention-days: 1
+          if-no-files-found: ignore
+
+  # ─── JOB 2: Publish SDK to npm ──────────────────────────────────────
+
+  publish-sdk:
+    name: Publish SDK to npm
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SDK
+        run: npm run build -w packages/sdk
+
+      - name: Check if version already published
+        id: check
+        run: |
+          PUBLISHED_VERSION=$(npm view observeos version 2>/dev/null || echo "none")
+          CURRENT_VERSION=$(node -p "require('./packages/sdk/package.json').version")
+          echo "Published: $PUBLISHED_VERSION / Current: $CURRENT_VERSION"
+          if [ "$PUBLISHED_VERSION" == "$CURRENT_VERSION" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.check.outputs.skip != 'true'
+        run: npm publish -w packages/sdk --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Comment on PR (success)
+        if: success() && steps.check.outputs.skip != 'true' && github.event.pull_request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ SDK published to npm successfully!\n\n```\nnpm install observeos\n```'
+            })
+
+  # ─── JOB 3: Deploy Worker to Cloudflare ─────────────────────────────
+
+  deploy-worker:
+    name: Deploy Worker to Cloudflare
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Worker
+        run: npm run build -w packages/worker
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        working-directory: packages/worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Verify Worker deployment
+        run: |
+          WORKER_URL=$(npx wrangler deployments list --json | jq -r '.[0].url')
+          curl -f $WORKER_URL/health || exit 1
+        working-directory: packages/worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  # ─── JOB 4: Deploy Dashboard to Cloudflare Pages ─────────────────────
+
+  deploy-dashboard:
+    name: Deploy Dashboard to Cloudflare Pages
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Dashboard
+        run: npm run build -w packages/dashboard
+        env:
+          NEXT_PUBLIC_WORKER_URL: ${{ vars.NEXT_PUBLIC_WORKER_URL }}
+          NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy out --project-name observeos-dashboard
+        working-directory: packages/dashboard
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  # ─── JOB 5: Summary (send status) ───────────────────────────────────
+
+  deployment-summary:
+    name: Deployment Summary
+    needs: [publish-sdk, deploy-worker, deploy-dashboard]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+
+    steps:
+      - name: Check if all jobs succeeded
+        run: |
+          if [ "${{ needs.publish-sdk.result }}" != "success" ] || \
+             [ "${{ needs.deploy-worker.result }}" != "success" ] || \
+             [ "${{ needs.deploy-dashboard.result }}" != "success" ]; then
+            echo "❌ Some deployment jobs failed"
+            exit 1
+          else
+            echo "✅ All deployments succeeded"
+          fi
+
+      - name: Create Slack notification (optional)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'ObserveOS deployment failed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
