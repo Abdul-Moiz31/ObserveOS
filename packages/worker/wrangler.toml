@@ -1,0 +1,14 @@
+name = "observeos-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "observeos"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Set this as a secret: wrangler secret put API_KEY_SECRET
