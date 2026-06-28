@@ -1,0 +1,21 @@
+<svg width="640" height="160" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ObserveOS logo">
+  <defs>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark: an "eye" formed from an orbit ring + pulse, evoking observability tracing -->
+  <g transform="translate(80,80)">
+    <circle r="56" fill="none" stroke="url(#ring)" stroke-width="6" opacity="0.35"/>
+    <circle r="56" fill="none" stroke="url(#ring)" stroke-width="6" stroke-dasharray="120 252" stroke-linecap="round" transform="rotate(-90)"/>
+    <circle r="14" fill="url(#ring)"/>
+    <path d="M -34 6 L -16 6 L -8 -16 L 4 24 L 14 6 L 34 6" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(168,0)" font-family="Helvetica, Arial, sans-serif">
+    <text x="0" y="96" font-size="58" font-weight="700" fill="#0f172a">Observe<tspan fill="#6366f1">OS</tspan></text>
+  </g>
+</svg>

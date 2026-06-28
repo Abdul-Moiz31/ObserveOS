@@ -1,7 +1,21 @@
 {
   "name": "observeos",
   "version": "0.1.0",
-  "description": "TypeScript-native LLM observability. Self-hostable. OTEL-compatible.",
+  "description": "Open-source, self-hosted LLM observability platform. Trace OpenAI, Anthropic, Ollama, and Hugging Face calls with token cost tracking, latency monitoring, and error tracing. TypeScript-native and OpenTelemetry-compatible.",
+  "keywords": [
+    "llm-observability",
+    "ai-monitoring",
+    "openai",
+    "anthropic",
+    "ollama",
+    "huggingface",
+    "llm-tracing",
+    "opentelemetry",
+    "self-hosted",
+    "open-source",
+    "cloudflare-workers",
+    "typescript"
+  ],
   "private": true,
   "packageManager": "npm@10.8.2",
   "license": "MIT",
