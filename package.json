@@ -29,6 +29,7 @@
   "workspaces": ["packages/*"],
 
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "test": "turbo run test",

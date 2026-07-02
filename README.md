@@ -156,49 +156,70 @@ This assumes you already have an ObserveOS Worker deployed and an API key. See [
 
 ObserveOS ships as code, not a hosted SaaS — you run the Worker and Dashboard yourself.
 
-### 1. Create a Cloudflare D1 database
+### Quick path
+
+```bash
+cp .env.example .env   # fill in CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN
+npm ci
+npm run setup           # creates the D1 database, deploys the Worker, mints an API key
+npm run dev -w packages/dashboard   # http://localhost:3000
+```
+
+`npm run setup` runs `scripts/setup.mjs`, which does everything in the manual steps below in one shot: creates (or reuses) the D1 database, patches `packages/worker/wrangler.toml`, applies `schema.sql`, sets a generated `ADMIN_SECRET`, deploys the Worker, mints a `default` tenant API key, and writes `.env` / `packages/dashboard/.dev.vars` for you. It's safe to re-run. Use `npm run setup -- --dry-run` to preview every command first.
+
+<details>
+<summary>Manual setup (for custom worker/database names, an existing D1 db, or CI-only deploys)</summary>
+
+#### 1. Create a Cloudflare D1 database
 
 ```bash
 cd packages/worker
-npx wrangler d1 create observeos-db
+npx wrangler d1 create observeos
 ```
 
 Copy the resulting `database_id` into `packages/worker/wrangler.toml`.
 
-### 2. Configure the Worker
+#### 2. Configure the Worker
 
 Copy `.env.example` to `.env` at the repo root and fill in your Cloudflare credentials (see [Environment Variables](#environment-variables)).
 
-### 3. Run the Worker locally
+#### 3. Apply the schema and set the admin secret
 
 ```bash
 cd packages/worker
-npm run dev
+npx wrangler d1 execute observeos --remote --file=src/db/schema.sql
+npx wrangler secret put ADMIN_SECRET
 ```
 
-This starts the ingestion API at `http://localhost:8787`.
+#### 4. Deploy the Worker
 
-### 4. Mint an API key
+```bash
+npx wrangler deploy
+```
+
+#### 5. Mint an API key
 
 The Worker exposes an admin-only `keys` route used to issue tenant API keys:
 
 ```bash
-curl -X POST http://localhost:8787/v1/keys \
-  -H "Authorization: Bearer $WORKER_API_KEY_SECRET" \
+curl -X POST https://<your-worker>.workers.dev/v1/keys \
+  -H "Authorization: Bearer $ADMIN_SECRET" \
   -H "Content-Type: application/json" \
   -d '{"tenantId": "my-team", "name": "local-dev"}'
 ```
 
-The response includes a one-time `apiKey` — only its hash is stored, so save it now. Use it as `OBSERVEOS_API_KEY` in your application and `NEXT_PUBLIC_API_KEY` in the dashboard.
+The response includes a one-time `apiKey` — only its hash is stored, so save it now. Use it as `OBSERVEOS_API_KEY` in your application, and put `WORKER_URL`/`WORKER_API_KEY`/`WORKER_TENANT_ID` in `packages/dashboard/.dev.vars` for the dashboard's Pages Function proxy.
 
-### 5. Run the Dashboard
+#### 6. Run the Dashboard
 
 ```bash
 cd packages/dashboard
 npm run dev
 ```
 
-Visit `http://localhost:3000` to browse traces, costs, and errors.
+This runs `wrangler pages dev -- next dev`, which serves the Next.js dev server through the same Pages Function proxy (`functions/api/[[path]].ts`) used in production — plain `next dev` alone won't proxy `/api/*` to the Worker. Visit `http://localhost:3000` to browse traces, costs, and errors.
+
+</details>
 
 ## SDK Usage
 
