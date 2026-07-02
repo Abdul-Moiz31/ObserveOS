@@ -61,3 +61,33 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count        INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (key_hash, window_start)
 );
+
+CREATE TABLE IF NOT EXISTS alert_rules (
+  id               TEXT PRIMARY KEY,
+  tenant_id        TEXT NOT NULL,
+  name             TEXT NOT NULL,
+  metric           TEXT NOT NULL, -- 'cost_usd' | 'error_count' | 'error_rate' | 'latency_p95'
+  window_minutes   INTEGER NOT NULL,
+  threshold        REAL NOT NULL,
+  webhook_url      TEXT NOT NULL,
+  cooldown_minutes INTEGER NOT NULL DEFAULT 60,
+  enabled          INTEGER NOT NULL DEFAULT 1,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_rules_tenant  ON alert_rules (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_alert_rules_enabled ON alert_rules (enabled) WHERE enabled = 1;
+
+CREATE TABLE IF NOT EXISTS alert_events (
+  id             TEXT PRIMARY KEY,
+  rule_id        TEXT NOT NULL,
+  tenant_id      TEXT NOT NULL,
+  metric_value   REAL NOT NULL,
+  threshold      REAL NOT NULL,
+  webhook_status INTEGER,
+  triggered_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_events_rule   ON alert_events (rule_id, triggered_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alert_events_tenant ON alert_events (tenant_id, triggered_at DESC);

@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/traces', label: 'Traces',    icon: '📝' },
   { href: '/costs',  label: 'Costs',     icon: '💰' },
   { href: '/errors', label: 'Errors',    icon: '⚠️' },
+  { href: '/alerts', label: 'Alerts',    icon: '🔔' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {

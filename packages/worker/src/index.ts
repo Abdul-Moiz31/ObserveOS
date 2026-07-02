@@ -2,8 +2,11 @@ import type { Env } from './types'
 import { handleTraces }  from './routes/traces'
 import { handleMetrics } from './routes/metrics'
 import { handleKeys } from './routes/keys'
+import { handleAlerts } from './routes/alerts'
+import { evaluateAlerts } from './alerts/evaluate'
 
 const DEFAULT_RETENTION_DAYS = 90
+const ALERT_EVAL_CRON = '*/5 * * * *'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -20,6 +23,7 @@ export default {
     if (url.pathname.startsWith('/v1/traces'))  return handleTraces(request, env)
     if (url.pathname.startsWith('/v1/metrics')) return handleMetrics(request, env)
     if (url.pathname.startsWith('/v1/keys'))    return handleKeys(request, env)
+    if (url.pathname.startsWith('/v1/alerts'))  return handleAlerts(request, env)
 
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
@@ -27,9 +31,15 @@ export default {
     })
   },
 
-  // Daily retention cleanup — deletes traces and stale rate-limit rows past the
-  // configured retention window. Wired up via the cron trigger in wrangler.toml.
-  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+  // Two cron triggers share this handler (see wrangler.toml): the daily
+  // retention cleanup and the 5-minute alert evaluation. Dispatch on
+  // event.cron so each runs its own job.
+  async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
+    if (event.cron === ALERT_EVAL_CRON) {
+      await evaluateAlerts(env)
+      return
+    }
+
     const retentionDays = parseInt(env.RETENTION_DAYS ?? '') || DEFAULT_RETENTION_DAYS
     const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
 

@@ -48,6 +48,7 @@ That's the whole workflow. Full copy-pasteable commands are in [Quick Start](#qu
 - [Quick Start](#quick-start)
 - [Self-Hosting the Backend](#self-hosting-the-backend)
 - [SDK Usage](#sdk-usage)
+- [Alerting](#alerting)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
 - [Development](#development)
@@ -267,6 +268,26 @@ import { hashPrompt, calculateCost, getModelPricing, MODEL_PRICING } from 'obser
 
 These are useful if you want to compute cost/hash manually outside the wrapper flow (e.g. for a custom/unsupported provider).
 
+## Alerting
+
+The Worker evaluates alert rules on a 5-minute cron and fires a webhook when a metric exceeds a threshold you set — no polling the dashboard required. Manage rules from the dashboard's **Alerts** page, or directly via the API using your tenant `OBSERVEOS_API_KEY`:
+
+```bash
+curl -X POST "$OBSERVEOS_BASE_URL/v1/alerts" \
+  -H "Authorization: Bearer $OBSERVEOS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "High daily cost",
+    "metric": "cost_usd",
+    "windowMinutes": 1440,
+    "threshold": 10,
+    "webhookUrl": "https://hooks.slack.com/services/...",
+    "cooldownMinutes": 60
+  }'
+```
+
+Supported `metric` values: `cost_usd` (sum over the window), `error_count`, `error_rate` (0–1), `latency_p95` (ms). Once a rule fires it won't fire again for `cooldownMinutes`, even if the condition is still true. The webhook body includes both `text` and `content` fields (compatible with Slack and Discord incoming webhooks out of the box) plus structured `rule`/`value`/`tenantId` fields for custom receivers. `GET /v1/alerts`, `PATCH /v1/alerts/:id`, `DELETE /v1/alerts/:id`, and `GET /v1/alerts/events` (firing history) round out the API.
+
 ## Project Structure
 
 ```
@@ -393,7 +414,7 @@ Worker and Dashboard deploys require `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API
 
 - [ ] Additional provider wrappers (Google Gemini, Mistral, AWS Bedrock)
 - [ ] Native OpenTelemetry collector export mode
-- [ ] Alerting on error rate / cost thresholds
+- [x] Alerting on error rate / cost thresholds
 - [ ] Self-hosted Postgres backend option (alternative to D1)
 - [ ] Dashboard: saved views and team-level cost budgets
 

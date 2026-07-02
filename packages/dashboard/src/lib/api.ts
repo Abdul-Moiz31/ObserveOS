@@ -34,6 +34,41 @@ class APIClient {
   async getMetrics(days: number) {
     return this.fetch(`/metrics?days=${days}`)
   }
+
+  async getAlertRules() {
+    return this.fetch('/alerts')
+  }
+
+  async createAlertRule(rule: {
+    name: string
+    metric: string
+    windowMinutes: number
+    threshold: number
+    webhookUrl: string
+    cooldownMinutes?: number
+  }) {
+    return this.fetch('/alerts', { method: 'POST', body: JSON.stringify(rule) })
+  }
+
+  async updateAlertRule(id: string, updates: Partial<{
+    name: string
+    metric: string
+    windowMinutes: number
+    threshold: number
+    webhookUrl: string
+    cooldownMinutes: number
+    enabled: boolean
+  }>) {
+    return this.fetch(`/alerts/${id}`, { method: 'PATCH', body: JSON.stringify(updates) })
+  }
+
+  async deleteAlertRule(id: string) {
+    return this.fetch(`/alerts/${id}`, { method: 'DELETE' })
+  }
+
+  async getAlertEvents(limit = 50) {
+    return this.fetch(`/alerts/events?limit=${limit}`)
+  }
 }
 
 export const api = new APIClient(BASE_URL)

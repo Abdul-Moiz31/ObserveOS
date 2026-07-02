@@ -67,3 +67,29 @@ export interface Metrics {
   latencyPercentiles: LatencyPercentiles
   period: { days: number; from: string }
 }
+
+export type AlertMetric = 'cost_usd' | 'error_count' | 'error_rate' | 'latency_p95'
+
+export interface AlertRule {
+  id: string
+  tenant_id: string
+  name: string
+  metric: AlertMetric
+  window_minutes: number
+  threshold: number
+  webhook_url: string
+  cooldown_minutes: number
+  enabled: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AlertEvent {
+  id: string
+  rule_id: string
+  tenant_id: string
+  metric_value: number
+  threshold: number
+  webhook_status: number | null
+  triggered_at: string
+}

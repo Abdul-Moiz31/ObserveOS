@@ -12,13 +12,10 @@ out/
 *.tsbuildinfo
 
 # Environment
-.env
-.env.local
 .env.*.local
 .dev.vars
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -35,3 +32,8 @@ coverage/
 # Specific to packages
 packages/*/dist/
 packages/dashboard/.next/
+config.bat
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore

@@ -13,7 +13,10 @@ ENVIRONMENT = "production"
 RETENTION_DAYS = "90"
 
 [triggers]
-crons = ["0 3 * * *"] # daily retention cleanup, see scheduled() in src/index.ts
+crons = [
+  "0 3 * * *",  # daily retention cleanup, see scheduled() in src/index.ts
+  "*/5 * * * *" # alert rule evaluation, see evaluateAlerts() in src/alerts/evaluate.ts
+]
 
 # ADMIN_SECRET mints/revokes per-tenant API keys via POST/GET/DELETE /v1/keys.
 # It is NOT used for day-to-day trace ingestion/query auth (those use hashed

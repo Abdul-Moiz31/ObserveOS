@@ -24,6 +24,32 @@ export interface AuthContext {
   keyHash: string
 }
 
+export type AlertMetric = 'cost_usd' | 'error_count' | 'error_rate' | 'latency_p95'
+
+export interface AlertRuleRow {
+  id: string
+  tenant_id: string
+  name: string
+  metric: AlertMetric
+  window_minutes: number
+  threshold: number
+  webhook_url: string
+  cooldown_minutes: number
+  enabled: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AlertEventRow {
+  id: string
+  rule_id: string
+  tenant_id: string
+  metric_value: number
+  threshold: number
+  webhook_status: number | null
+  triggered_at: string
+}
+
 export interface TraceRow {
   id: string
   trace_id: string
