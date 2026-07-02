@@ -12,13 +12,10 @@ out/
 *.tsbuildinfo
 
 # Environment
-.env
-.env.local
 .env.*.local
 .dev.vars
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

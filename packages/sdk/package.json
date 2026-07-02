@@ -13,10 +13,14 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev": "node api.js && tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
@@ -30,9 +34,15 @@
     "@huggingface/inference": ">=2.0.0"
   },
   "peerDependenciesMeta": {
-    "openai": { "optional": true },
-    "@anthropic-ai/sdk": { "optional": true },
-    "@huggingface/inference": { "optional": true }
+    "openai": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@huggingface/inference": {
+      "optional": true
+    }
   },
   "dependencies": {},
   "devDependencies": {
@@ -48,9 +58,19 @@
     "eslint": "^8.0.0"
   },
   "keywords": [
-    "llm", "observability", "monitoring", "tracing", "opentelemetry",
-    "openai", "anthropic", "ollama", "huggingface",
-    "ai", "typescript", "sdk", "self-hosted"
+    "llm",
+    "observability",
+    "monitoring",
+    "tracing",
+    "opentelemetry",
+    "openai",
+    "anthropic",
+    "ollama",
+    "huggingface",
+    "ai",
+    "typescript",
+    "sdk",
+    "self-hosted"
   ],
   "author": "Abdul Mueez <abdulmoiz3140@gmail.com>",
   "license": "MIT",

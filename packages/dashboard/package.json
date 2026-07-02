@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "wrangler pages dev -- next dev",
+    "dev": "node api.js && wrangler pages dev -- next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node api.js && next start",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .tsx,.ts"
   },
