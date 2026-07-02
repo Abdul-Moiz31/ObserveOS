@@ -97,9 +97,13 @@ async function main() {
     process.exit(1)
   }
   const rootEnv = readEnvFile(path.join(ROOT, '.env'))
-  const hasCreds =
-    (process.env.CLOUDFLARE_ACCOUNT_ID || rootEnv.CLOUDFLARE_ACCOUNT_ID) &&
-    (process.env.CLOUDFLARE_API_TOKEN || rootEnv.CLOUDFLARE_API_TOKEN)
+  // .env is only read by this script — export any values it has onto
+  // process.env so the wrangler/fetch calls below (which inherit process.env)
+  // actually see them, instead of just this script knowing about them.
+  for (const [key, value] of Object.entries(rootEnv)) {
+    if (process.env[key] === undefined) process.env[key] = value
+  }
+  const hasCreds = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN
   if (!hasCreds && !DRY_RUN) {
     console.error(
       '  No Cloudflare credentials found. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN\n' +
